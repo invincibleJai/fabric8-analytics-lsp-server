@@ -6,23 +6,31 @@
     "contributors": [{
         "name": "Michal Srb",
         "email": "michal@redhat.com"
+    },{
+        "name": "Jaivardhan Kumar",
+        "email": "jakumar@redhat.com"
     }],
     "license": "Apache-2.0",
     "engines": {
         "node": "*"
     },
     "dependencies": {
-        "vscode-languageserver": "^2.2.0",
+        "vscode-languageserver": "^3.3.0",
         "stream-json": "0.4.2",
         "request": "^2.79.0",
         "xml2object": "0.1.2",
         "winston":"2.3.1"
     },
     "devDependencies": {
-        "typescript": "^2.1.4"
+        "@types/mocha": "^2.2.33",
+        "@types/node": "^6.0.52",
+        "typescript": "^2.1.4",
+        "mocha": "^2.3.3"
     },
     "scripts": {
         "build": "node node_modules/typescript/bin/tsc -p .",
-        "dist": "cp -r node_modules/ output/ && node -p -e \"require('./package.json').version\" > output/VERSION && rm -rf output/node_modules/typescript/ && tar cvjf ca-lsp-server.tar -C output/ ."
+        "dist": "cp -r node_modules/ output/ && node -p -e \"require('./package.json').version\" > output/VERSION && rm -rf output/node_modules/typescript/ && tar cvjf ca-lsp-server.tar -C output/ .",
+        "pretest": "tsc -p ./test",
+        "test": "mocha test/out/"
     }
 }
