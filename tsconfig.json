@@ -1,12 +1,14 @@
 {
 	"compilerOptions": {
-		"target": "ES6",
+		"target": "es6",
 		"module": "commonjs",
 		"moduleResolution": "node",
 		"sourceMap": true,
-		"outDir": "output"
+		"lib" : [ "es2016" ],
+		"outDir": "../fabric8-analytics-vscode-extension/server"
 	},
 	"exclude": [
-		"node_modules"
+		"node_modules",
+		"output"
 	]
 }

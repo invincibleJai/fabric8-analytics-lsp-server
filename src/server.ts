@@ -19,7 +19,7 @@ const request = require('request');
 const winston = require('winston');
 
  winston.level = 'debug';
- winston.add(winston.transports.File, { filename: '/workspace-logs/ls-bayesian/bayesian.log' });
+ winston.add(winston.transports.File, { filename: 'bayesian.log' });
  winston.remove(winston.transports.Console);
  winston.info('Starting Bayesian');
 
@@ -174,9 +174,9 @@ class AnalysisConfig
 
     constructor() {
         // TODO: this needs to be configurable
-        this.server_url = process.env.RECOMMENDER_API_URL || "api-url-not-available-in-lsp";
-        this.api_token = process.env.RECOMMENDER_API_TOKEN || "token-not-available-in-lsp";
-        this.three_scale_user_token = process.env.THREE_SCALE_USER_TOKEN || "";
+        this.server_url = process.env["RECOMMENDER_API_URL"] || "api-url-not-available-in-lsp";
+        this.api_token = process.env["RECOMMENDER_API_TOKEN"] || "token-not-available-in-lsp";
+        this.three_scale_user_token = process.env["THREE_SCALE_USER_TOKEN"] || "";
         this.forbidden_licenses = [];
         this.no_crypto = false;
         this.home_dir = process.env[(process.platform == 'win32') ? 'USERPROFILE' : 'HOME'];
@@ -201,6 +201,7 @@ let metadataCache = new Map();
 
 let get_metadata = (ecosystem, name, version, cb) => {
     let cacheKey = ecosystem + " " + name + " " + version;
+    winston.info(cacheKey);
     let metadata = metadataCache[cacheKey];
     if (metadata != null) {
         winston.info('cache hit for ' + cacheKey);
@@ -218,7 +219,7 @@ let get_metadata = (ecosystem, name, version, cb) => {
     //options['path'] += `/component-analyses/${part}/`;
     options['headers'] = {'Authorization': 'Bearer ' + config.api_token};
     winston.debug('get ' + options['host'] + options['path']);
-    if(process.env.RECOMMENDER_API_URL){
+    if(process.env["RECOMMENDER_API_URL"]){
         https.get(options, function(res){
             let body = '';
             res.on('data', function(chunk) { body += chunk; });
@@ -244,6 +245,7 @@ files.on(EventStream.Diagnostics, "^package\\.json$", (uri, name, contents) => {
 
     collector.collect(stream).then((deps) => {
         let diagnostics = [];
+        winston.info("deps pkg"+ deps);
         /* Aggregate asynchronous requests and send the diagnostics at once */
         let aggregator = new Aggregator(deps, () => {
             connection.sendDiagnostics({uri: uri, diagnostics: diagnostics});
@@ -262,17 +264,25 @@ files.on(EventStream.Diagnostics, "^package\\.json$", (uri, name, contents) => {
 
 files.on(EventStream.Diagnostics, "^pom\\.xml$", (uri, name, contents) => {
     /* Convert from readable stream into string */
+    winston.info("in file pom.xml");
     let stream = stream_from_string(contents);
+    winston.info("in file pom.xml 2");
     let collector = new PomXmlDependencyCollector();
-
+    winston.info("in file pom.xml 3");
     collector.collect(stream).then((deps) => {
         let diagnostics = [];
+        winston.info("in file pom.xml 4");
+        winston.info("deps"+ deps);
         /* Aggregate asynchronous requests and send the diagnostics at once */
         let aggregator = new Aggregator(deps, () => {
             connection.sendDiagnostics({uri: uri, diagnostics: diagnostics});
         });
         for (let dependency of deps) {
+            winston.info("in file pom.xml 5");
+            winston.info(dependency.name.value);
+            winston.info(dependency.version.value);
             get_metadata('maven', dependency.name.value, dependency.version.value, (response) => {
+                winston.info('maven cmp name'+ dependency.name.value);
                 if (response != null) {
                     let pipeline = new DiagnosticsPipeline(DiagnosticsEngines, dependency, config, diagnostics);
                     pipeline.run(response);
@@ -285,7 +295,7 @@ files.on(EventStream.Diagnostics, "^pom\\.xml$", (uri, name, contents) => {
 
 files.on(EventStream.Diagnostics, "^requirements\\.txt$", (uri, name, contents) => {
     let collector = new ReqDependencyCollector();
-
+    winston.info("in file req.txt");
     collector.collect(contents).then((deps) => {
         let diagnostics = [];
         /* Aggregate asynchronous requests and send the diagnostics at once */
@@ -312,6 +322,8 @@ connection.onDidSaveTextDocument((params) => {
 });
 
 connection.onDidChangeTextDocument((params) => {
+    debugger;
+    winston.info('connection.onDidChangeTextDocument uri '+ params.textDocument.uri);
     /* Update internal state for code lenses */
     server.files.file_data[params.textDocument.uri] = params.contentChanges[0].text;
     clearTimeout(checkDelay);
@@ -321,6 +333,8 @@ connection.onDidChangeTextDocument((params) => {
 });
 
 connection.onDidOpenTextDocument((params) => {
+    debugger;
+    winston.info('connection.onDidOpen uri '+ params.textDocument.uri);
     server.handle_file_event(params.textDocument.uri, params.textDocument.text);
 });
 
@@ -339,5 +353,5 @@ connection.onCodeAction((params, token): Command[] => {
 connection.onDidCloseTextDocument((params) => {
     clearTimeout(checkDelay);
 });
-
+//am in
 connection.listen();
